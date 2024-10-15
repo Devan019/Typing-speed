@@ -1,156 +1,184 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from "react";
 
-import './App.css'
-
-
-
-
-function App() {
+export default function App() {
+  const [minute, setMinute] = useState(0);
   const [second, setSecond] = useState(0);
-  const [milisecond, setMiliSecond] = useState(0);
-  const [minute, setminute] = useState(0);
-  const [btnState, setBtnstate] = useState(false);
-  const charsComplete = useRef(0);
+  const [milisecond, setMilisecond] = useState(0);
+  const [btnState, setBtnState] = useState(false);
+  const btnRef = useRef(null);
   const [wpm, setWpm] = useState(0);
-  let textColor = "text-yellow-500";
-  let idx = 0;
-  let stop; //for stop interval
+  const minRef = useRef(0);
+  const wordC = useRef(1);
+  const idx = useRef(0)
+  const intervalId = useRef(null);
+  const [textColor, setTextColor] = useState("text-yellow-500");
+  const [Accuracy, setAccuracy] = useState(100);
+  const [wrongChar, setWrongchar] = useState(0);
 
-  const secondRef = useRef(0);
-  const minuteRef = useRef(0);
-  const miliRef = useRef(0);
-
-  const wpmCalculate = () => {
-    console.log(minuteRef.current)
-    if(minuteRef.current == 1){
-      console.log("wow")
-      clearInterval(stop) 
-      setWpm(charsComplete.current / 5);
-    }
-      
-  }
-
+  // For paragraphs
+  const [paratext, setparatext] = useState("");
+  const [paras, setparas] = useState([]);
+  const [paraNo , setParaNo] = useState(0);
 
   const forPara = () => {
-    let p = document.querySelector("p");
+    let p = document.querySelector(".div");
     let cluster = "";
     let splitText = p.innerText.split(" ");
-
-    splitText.forEach((value, idx) => {
+    splitText.forEach((value) => {
       let split = value.split("");
       let tcluster = "";
-      split.forEach((char, idx) => {
-        tcluster += `<span class='chars'>${char}</span>`
-      })
-      tcluster += `<span class='chars space'>&nbsp;</span>`
-      cluster += `<div class = 'word'>${tcluster}</div>`
-
-    })
-
-    p.innerHTML = cluster
-    document.body.addEventListener("keydown", (evt) => {
-      setBtnstate(true)
+      split.forEach((char) => {
+        tcluster += `<span class='chars'>${char}</span>`;
+      });
+      tcluster += `<span class='chars space'>&nbsp;</span>`;
+      cluster += `<div class='word'>${tcluster}</div>`;
     });
-  }
+    p.innerHTML = cluster;
+  };
 
-  const ischeck = (e, allchars) => {
-    wpmCalculate();
-    if(minuteRef.current >= 1) return;
-    let char = allchars[idx].innerText;
-    if (e.key == char || (e.key == ' ' && char == '\u00a0')) {
-      allchars[idx].classList.add(textColor);
-      idx++;
-
-      charsComplete.current += 1;
-     
-
+  const handleKeyPress = (evt) => {
+    let value = evt.key;
+    let allChars = document.querySelectorAll(".chars");
+    let char = allChars[idx.current]?.innerText;
+    if (value.length === 1) {
+      if (value === char || (value === " " && char === "\u00a0")) {
+        console.log(idx.current , value , char)
+        allChars[idx.current].classList.remove("text-red-500");
+        allChars[idx.current].classList.add(textColor);
+        idx.current++;
+        wordC.current++;
+        return;
+      } else {
+        console.log(idx.current , value , char)
+        allChars[idx.current].classList.add("text-red-500");
+        setWrongchar((prev) => prev + 1);
+      }
     }
+  };
 
-  }
-
-  const setAll = () => {
-    if(secondRef.current == 59){
-      minuteRef.current += 1;
-      secondRef.current = 0;
-    }
-
-    if(miliRef.current == 99){
-      secondRef.current += 1;
-      miliRef.current = 0;
-    }
-
-    miliRef.current += 1;
-  }
-
+ 
   useEffect(() => {
-
     if (btnState) {
-      stop = setInterval(() => {
-        setAll();
-        setMiliSecond((prevMili) => {
-          if (prevMili == 99) {
+      intervalId.current = setInterval(() => {
+        if (minRef.current === 1) {
+          clearInterval(intervalId.current);
+          setWpm(wordC.current / 5);
+          setAccuracy(
+            (wordC.current / document.querySelectorAll(".chars").length) * 100
+          );
+          setBtnState(false);
+        }
+        setMilisecond((prev) => {
+          if (prev === 99) {
             setSecond((prevSec) => {
-              if (prevSec == 59) {
-                setminute((prevMinute) => {
-                  if (prevMinute == 0) {
-                    clearInterval(stop);
-                  }
-                  return prevMinute + 1;
-                });
+              if (prevSec === 59) {
+                setMinute((prevMin) => prevMin + 1);
+                minRef.current += 1;
                 return 0;
               }
               return prevSec + 1;
-            })
+            });
             return 0;
           }
-          return prevMili + 1;
+          return prev + 1;
         });
-
-       
-
       }, 10);
+    } else {
+
+      setSecond(0);
+      setMinute(0);
+      setMilisecond(0);
+      idx.current = 0;
+      minRef.current = 0;
+      wordC.current = 0;
+      let allChars = document.querySelectorAll(".chars");
+      allChars.forEach((char) => {
+        char.classList.remove(textColor, "text-red-500");
+      });
+      document.body.removeEventListener("keypress", handleKeyPress);
     }
+  }, [btnState]);
 
-    return () => clearInterval(stop)
-  }, [btnState])
+  function forAll(){
+    const keyPressHandler = (evt) => {
+      setTimeout(() => {
+        let first = document.querySelectorAll(".chars");
+        
+        if (evt.key === first[0].innerHTML && !btnState) {
+          setBtnState(true);
+          btnRef.current = true;
+          setWpm(0);
+        }
+        if (btnRef.current) {
+          handleKeyPress(evt);
+        }
+      }, 100);
+    };
 
-
-
+    document.body.addEventListener("keypress", (evt) => {
+      keyPressHandler(evt);
+    });
+  }
+ 
   useEffect(() => {
+    forAll()
+  }, []);
+
+ 
+  useEffect(() => {
+    async function main() {
+      const api = await fetch("../para.json");
+      const data = await api.json();
+      const paras = data.paragraphs;
+      setparas(paras);
+      setparatext(paras[0].text);
+    }
+    main();
     setTimeout(() => {
-      forPara();
-      let allchars = document.querySelectorAll(".chars");
+      forPara(); 
+    }, 100);
+  }, []);
 
-      document.body.addEventListener("keyup", (e) => {
-        // console.log(e.key)
-        ischeck(e, allchars);
-      })
-    }, 100)
-
-  }, [])
-
-
+  const changePara = () => {
+    setSecond(0);
+    setMinute(0);
+    setMilisecond(0);
+    clearInterval(intervalId.current);
+    let no = (paraNo + 1) % paras.length;
+    setParaNo((prev)=>prev + 1);
+    setparatext(paras[no].text);
+    setTimeout(() => {
+      forPara(); 
+      forAll()
+    }, 100);
+    idx.current = 0;
+    minRef.current = 0;
+    wordC.current = 0;
+    let allChars = document.querySelectorAll(".chars");
+    allChars.forEach((char) => {
+      char.classList.remove(textColor, "text-red-500");
+    });
+    setWrongchar(0)
+  }
 
   return (
-    <div className='bg-gray-700 w-full h-screen'>
-
-      <h2 className='text-3xl text-yellow-400 text-center p-4'>Enter first letter of statment</h2>
-
-      <div id='timer' className='flex justify-center items-center gap-2 text-white text-2xl'>
+    <div className="App bg-black text-white w-full h-screen flex flex-col items-center">
+      <h2>Typing speed</h2>
+      <h3 className="text-red-400">For start, press '{paratext[0]}'</h3>
+      <div className="flex justify-center gap-4">
         <div>{minute}</div>
         <div>{second}</div>
         <div>{milisecond}</div>
       </div>
-
-      <p className='text-center text-white text-4xl justify-center h-1/2 flex items-center flex-wrap gap-4'>
-        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Expedita dolores in cumque velit. Sequi, quibusdam dolorum perferendis eligendi alias nisi fuga, pariatur, iste tenetur numquam ipsa. Voluptates fugit ullam sed architecto odio ab consequuntur eaque eligendi reiciendis porro tempora culpa nisi, omnis voluptate quas voluptatem aut ipsa in eum ipsum.
-      </p>
-
-      <div className='flex text-red-300 p-4 text-3xl text-center justify-center items-center m-4'>
-        <div className='p-4'>Wpm :- {wpm} </div>
+      <div className="p-3 flex flex-wrap div text-2xl">{paratext}</div>
+      <div className="sp flex justify-around w-full">
+        <button onClick={changePara} className="bg-green-600 p-2 rounded-lg">Change paragraph</button>
+        <div>
+          <div className="text-red-400">Wrong Chars: {wrongChar}</div>
+          <div className="text-red-400">WPM: {wpm}</div>
+          <div className="text-red-400">Accuracy: {Accuracy}%</div>
+        </div>
       </div>
     </div>
-  )
+  );
 }
-
-export default App

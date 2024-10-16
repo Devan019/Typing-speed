@@ -18,7 +18,7 @@ export default function App() {
   // For paragraphs
   const [paratext, setparatext] = useState("");
   const [paras, setparas] = useState([]);
-  const [paraNo , setParaNo] = useState(0);
+  const [paraNo, setParaNo] = useState(0);
 
   const forPara = () => {
     let p = document.querySelector(".div");
@@ -39,24 +39,25 @@ export default function App() {
   const handleKeyPress = (evt) => {
     let value = evt.key;
     let allChars = document.querySelectorAll(".chars");
-    let char = allChars[idx.current]?.innerText;
+    let char = allChars[idx.current].innerText;
     if (value.length === 1) {
       if (value === char || (value === " " && char === "\u00a0")) {
-        console.log(idx.current , value , char)
+        console.log(idx.current, value, char)
         allChars[idx.current].classList.remove("text-red-500");
         allChars[idx.current].classList.add(textColor);
         idx.current++;
         wordC.current++;
         return;
       } else {
-        console.log(idx.current , value , char)
+        console.log(idx.current, value, char)
         allChars[idx.current].classList.add("text-red-500");
         setWrongchar((prev) => prev + 1);
+        return;
       }
     }
   };
 
- 
+
   useEffect(() => {
     if (btnState) {
       intervalId.current = setInterval(() => {
@@ -99,32 +100,32 @@ export default function App() {
     }
   }, [btnState]);
 
-  function forAll(){
+  function forAll() {
     const keyPressHandler = (evt) => {
-      setTimeout(() => {
-        let first = document.querySelectorAll(".chars");
-        
-        if (evt.key === first[0].innerHTML && !btnState) {
-          setBtnState(true);
-          btnRef.current = true;
-          setWpm(0);
-        }
-        if (btnRef.current) {
-          handleKeyPress(evt);
-        }
-      }, 100);
+      let first = document.querySelectorAll(".chars");
+
+
+      if (evt.key === first[0].innerHTML && !btnState) {
+        setBtnState(true);
+        btnRef.current = true;
+      }
+      if (btnRef.current) {
+        handleKeyPress(evt);
+      }
+
     };
 
     document.body.addEventListener("keypress", (evt) => {
-      keyPressHandler(evt);
+      if (evt.key.length === 1) {
+        setTimeout(() => {
+          keyPressHandler(evt);
+        }, 100)
+      }
     });
   }
- 
-  useEffect(() => {
-    forAll()
-  }, []);
 
- 
+
+
   useEffect(() => {
     async function main() {
       const api = await fetch("../para.json");
@@ -135,30 +136,31 @@ export default function App() {
     }
     main();
     setTimeout(() => {
-      forPara(); 
+      forPara();
     }, 100);
+
+    forAll();
   }, []);
 
   const changePara = () => {
     setSecond(0);
     setMinute(0);
     setMilisecond(0);
-    clearInterval(intervalId.current);
-    let no = (paraNo + 1) % paras.length;
-    setParaNo((prev)=>prev + 1);
-    setparatext(paras[no].text);
-    setTimeout(() => {
-      forPara(); 
-      forAll()
-    }, 100);
-    idx.current = 0;
     minRef.current = 0;
-    wordC.current = 0;
-    let allChars = document.querySelectorAll(".chars");
-    allChars.forEach((char) => {
-      char.classList.remove(textColor, "text-red-500");
-    });
+    btnRef.current = false;
+    clearInterval(intervalId.current);
+
+    let no = (paraNo + 1) % paras.length;
+    setParaNo((prev) => prev + 1);
+    setparatext(paras[no].text);
+    setBtnState(false)
     setWrongchar(0)
+    setTimeout(() => {
+      forPara();
+      forAll();
+      setWrongchar(0)
+    }, 100);
+
   }
 
   return (
@@ -172,7 +174,9 @@ export default function App() {
       </div>
       <div className="p-3 flex flex-wrap div text-2xl">{paratext}</div>
       <div className="sp flex justify-around w-full">
-        <button onClick={changePara} className="bg-green-600 p-2 rounded-lg">Change paragraph</button>
+        <button 
+        type="submit"
+        onClick={changePara} className="bg-green-600 p-2 rounded-lg">Change paragraph</button>
         <div>
           <div className="text-red-400">Wrong Chars: {wrongChar}</div>
           <div className="text-red-400">WPM: {wpm}</div>
